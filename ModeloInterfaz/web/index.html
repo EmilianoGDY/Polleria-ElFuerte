@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pollería "El Fuerte" — Simulación</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header class="cabecera">
+    <h1>🍗 Pollería "El Fuerte" — Simulación</h1>
+    <nav class="tabs">
+      <button class="tab activo" data-vista="simular">Simular</button>
+      <button class="tab" data-vista="parametros">Parámetros</button>
+      <button class="tab" data-vista="restricciones">Restricciones</button>
+    </nav>
+  </header>
+
+  <main class="contenido">
+
+    <!-- ============ SIMULAR ============ -->
+    <section id="vista-simular" class="vista activa">
+      <div class="acciones">
+        <button id="btn-con" class="btn">Correr CON stock</button>
+        <button id="btn-sin" class="btn">Correr SIN stock</button>
+        <button id="btn-otra" class="btn" disabled>↻ Otra simulación</button>
+      </div>
+
+      <p id="placeholder-sim" class="placeholder">Elegí un modo para correr la simulación.</p>
+
+      <div id="resultado-sim" class="oculto">
+        <div class="cards" id="cards-resumen"></div>
+
+        <div class="panel">
+          <div class="panel-cab">
+            <div class="panel-titulo">Muestra de jornada <span id="muestra-nro" class="muestra-nro"></span></div>
+            <button id="btn-muestra" class="btn-chico">↻ Otra muestra</button>
+          </div>
+          <div class="tabla-scroll">
+            <table class="tabla" id="tabla-jornada">
+              <thead>
+                <tr>
+                  <th>N</th><th>r₁</th><th>TA</th><th>Llegada</th><th>r₂</th>
+                  <th>M</th><th>TP</th><th>NC</th><th>Inicio</th><th>TE</th>
+                  <th>Fin</th><th>Stock</th><th>Estado</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel panel-promedio">
+          <div class="titulo-promedio">Promedio de <span id="rep-n">—</span> corridas</div>
+          <div class="grid-replicas" id="grid-replicas"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PARÁMETROS ============ -->
+    <section id="vista-parametros" class="vista">
+      <div class="panel">
+        <table class="tabla-param" id="tabla-param"><tbody></tbody></table>
+        <p class="derivados" id="derivados"></p>
+      </div>
+    </section>
+
+    <!-- ============ RESTRICCIONES ============ -->
+    <section id="vista-restricciones" class="vista">
+      <div class="panel" id="lista-restricciones"></div>
+    </section>
+
+  </main>
+
+  <footer class="pie">UTN-FRRE · Simulación · Pollería "El Fuerte"</footer>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
