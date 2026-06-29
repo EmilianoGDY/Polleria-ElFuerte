@@ -170,11 +170,12 @@ function pintarMuestra(d) {
   }).join("");
 }
 
-// Promedio de las N corridas. Atendidos y milanesas: entero hacia arriba.
+// Promedio de las N corridas. Clientes atendidos: promedio con decimales (no se
+// redondea, porque es un valor medio). Milanesas: entero hacia arriba.
 function pintarReplicas(rep) {
   $("#rep-n").textContent = rep.corridas;
   const metricas = [
-    ["Clientes atendidos", Math.ceil(rep.atendidos), ""],
+    ["Clientes atendidos", num(rep.atendidos), ""],
     ["Milanesas vendidas", Math.ceil(rep.milanesas_vendidas), ""],
     ["Se retiraron", Math.ceil(rep.perdidos_tolerancia), ""],
     ["Espera promedio (min)", num(rep.espera_promedio), ""],
@@ -232,7 +233,7 @@ function dibujarBarrido(d) {
     `<div class="titulo-promedio">Stock óptimo: ${opt.stock}</div>` +
     `<div class="grid-replicas">` +
     `<div class="metrica verde"><span class="k">Ganancia neta</span><span class="v verde">${plata(opt.ganancia_neta)}</span></div>` +
-    `<div class="metrica"><span class="k">Clientes atendidos</span><span class="v">${Math.ceil(opt.atendidos)}</span></div>` +
+    `<div class="metrica"><span class="k">Clientes atendidos</span><span class="v">${num(opt.atendidos)}</span></div>` +
     `<div class="metrica rojo"><span class="k">Costo oportunidad</span><span class="v rojo">${plata(opt.perdida_oportunidad)}</span></div>` +
     `<div class="metrica amarillo"><span class="k">Desperdicio</span><span class="v">${plata(opt.desperdicio)}</span></div>` +
     `</div>`;
@@ -240,7 +241,7 @@ function dibujarBarrido(d) {
   $("#tabla-barrido tbody").innerHTML = d.filas.map((f, i) => `
     <tr class="${i === d.optimo_indice ? "optima" : ""}">
       <td>${f.stock}</td>
-      <td>${Math.ceil(f.atendidos)}</td>
+      <td>${num(f.atendidos)}</td>
       <td>${Math.ceil(f.milanesas_vendidas)}</td>
       <td>${Math.ceil(f.perdidos_tolerancia)}</td>
       <td>${num(f.espera_promedio)}</td>
