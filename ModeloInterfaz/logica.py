@@ -69,11 +69,18 @@ class ResultadoJornada:
 
     @property
     def costo_total(self):
+        # Costo de materia prima de las milanesas que SÍ se vendieron.
         return self._costo * self.milanesas_vendidas
 
     @property
+    def desperdicio(self):
+        # Costo de las milanesas pre-elaboradas que sobraron (no se vendieron).
+        return self._costo * self.stock_remanente
+
+    @property
     def ganancia_neta(self):
-        return self.ganancia_bruta - self.costo_total
+        # Ingreso menos lo producido: vendido + desperdiciado.
+        return self.ganancia_bruta - self.costo_total - self.desperdicio
 
     @property
     def perdida_oportunidad(self):
@@ -163,6 +170,7 @@ class ResultadoReplicas:
     milanesas_no_vendidas: float = 0.0
     ganancia_bruta: float = 0.0
     costo_total: float = 0.0
+    desperdicio: float = 0.0
     ganancia_neta: float = 0.0
     perdida_oportunidad: float = 0.0
     espera_promedio: float = 0.0
@@ -187,6 +195,7 @@ def correr_replicas(p, stock_inicial=None, corridas=None, rng=None):
         acum.milanesas_no_vendidas += r.milanesas_no_vendidas
         acum.ganancia_bruta += r.ganancia_bruta
         acum.costo_total += r.costo_total
+        acum.desperdicio += r.desperdicio
         acum.ganancia_neta += r.ganancia_neta
         acum.perdida_oportunidad += r.perdida_oportunidad
         acum.espera_maxima += r.espera_maxima
@@ -196,7 +205,7 @@ def correr_replicas(p, stock_inicial=None, corridas=None, rng=None):
     n = corridas if corridas else 1
     for campo in ("atendidos", "perdidos_tolerancia", "milanesas_vendidas",
                   "milanesas_no_vendidas", "ganancia_bruta", "costo_total",
-                  "ganancia_neta", "perdida_oportunidad",
+                  "desperdicio", "ganancia_neta", "perdida_oportunidad",
                   "espera_maxima", "stock_remanente"):
         setattr(acum, campo, getattr(acum, campo) / n)
     acum.espera_promedio = suma_espera / n

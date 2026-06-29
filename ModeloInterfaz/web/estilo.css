@@ -77,8 +77,8 @@ body {
 }
 .btn-chico:hover { border-color: var(--cyan); }
 
-/* Cards de la muestra (chicas — 4 por fila, alineadas y al ancho) */
-.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+/* Cards de la muestra (chicas — 4 por fila, alineadas, al ancho y de igual altura) */
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; gap: 10px; margin-bottom: 18px; }
 .card { background: var(--bg-2); border: 1px solid var(--borde); border-left: 3px solid var(--cyan); border-radius: 8px; padding: 8px 11px; }
 .card .etiqueta { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
 .card .valor { font-size: 16px; font-weight: 700; margin-top: 3px; }
@@ -91,11 +91,13 @@ body {
 .amarillo { color: var(--amarillo); }
 .muted { color: var(--muted); }
 
-/* Réplicas (más grandes y llamativas — son lo importante) */
-.grid-replicas { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-.metrica { background: var(--bg); border: 1px solid var(--borde); border-left: 4px solid var(--cyan); border-radius: 9px; padding: 15px 17px; }
+/* Réplicas (más grandes y llamativas — son lo importante; todas de igual altura) */
+.grid-replicas { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); grid-auto-rows: 1fr; gap: 12px; }
+.metrica { background: var(--bg); border: 1px solid var(--borde); border-left: 4px solid var(--cyan); border-radius: 9px; padding: 14px 16px; }
 .metrica .k { display: block; color: var(--muted); font-size: 12.5px; }
-.metrica .v { display: block; font-size: 23px; font-weight: 700; margin-top: 5px; }
+.metrica .v { display: block; font-size: 21px; font-weight: 700; margin-top: 5px; }
+/* En la pantalla de óptimo, los 4 destacados ocupan el ancho completo */
+#opt-destacado .grid-replicas { grid-template-columns: repeat(4, 1fr); }
 .metrica.verde    { border-left-color: var(--verde); }
 .metrica.rojo     { border-left-color: var(--rojo); }
 .metrica.amarillo { border-left-color: var(--amarillo); }
@@ -119,13 +121,19 @@ body {
     5px 5px 6px rgba(0,0,0,.55);
 }
 
-/* Tabla traza */
-.tabla-scroll { overflow-x: auto; }
-.tabla { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.tabla th { background: var(--bg-3); padding: 9px 11px; text-align: right; white-space: nowrap; }
+/* Tabla traza (scroll interno: ~20 filas; entra completa a lo ancho) */
+.tabla-scroll { overflow: auto; max-height: 560px; }
+.tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tabla th { background: var(--bg-3); padding: 7px 6px; text-align: right; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
 .tabla th:last-child, .tabla td:last-child { text-align: left; }
-.tabla td { padding: 8px 11px; text-align: right; border-top: 1px solid var(--borde); white-space: nowrap; }
+.tabla td { padding: 6px 6px; text-align: right; border-top: 1px solid var(--borde); white-space: nowrap; }
 .tabla tr:hover td { background: var(--bg-3); }
+/* Scrollbar fino y oscuro, a tono con el estilo */
+.tabla-scroll::-webkit-scrollbar { width: 9px; height: 9px; }
+.tabla-scroll::-webkit-scrollbar-track { background: transparent; }
+.tabla-scroll::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 8px; border: 2px solid var(--bg-2); }
+.tabla-scroll::-webkit-scrollbar-thumb:hover { background: var(--borde); }
+.tabla-scroll { scrollbar-width: thin; scrollbar-color: var(--bg-3) transparent; }
 .tabla tr.retiro td { background: rgba(210,153,34,.13); }
 .tabla tr.retiro:hover td { background: rgba(210,153,34,.2); }
 .badge-rojo { background: rgba(248,81,73,.18); color: var(--rojo); border: 1px solid var(--rojo); border-radius: 6px; padding: 1px 8px; font-weight: 700; }
@@ -169,3 +177,27 @@ body {
 .toast.mostrar { opacity: 1; }
 .toast.error { border-color: var(--rojo); }
 .toast.ok { border-color: var(--verde); }
+
+/* Costo del stock remanente, en línea al lado del número (no agranda la cajita) */
+.costo-inline { font-size: .68em; font-weight: 600; color: var(--rojo); }
+
+/* Pantalla Stock óptimo */
+.volver-bar { margin-bottom: 16px; }
+.rango-opt { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.campo-opt { display: flex; flex-direction: column; gap: 5px; }
+.campo-opt label { font-size: 12.5px; color: var(--muted); }
+.campo-opt input {
+  background: var(--bg); border: 1px solid var(--borde); color: var(--texto);
+  border-radius: 7px; padding: 8px 10px; font-size: 14px; width: 130px;
+}
+.campo-opt input:focus { outline: none; border-color: var(--cyan); }
+.nota-opt {
+  margin-top: 16px; font-size: 13px; color: var(--muted); line-height: 1.6;
+  background: rgba(88,166,255,.08); border: 1px solid rgba(88,166,255,.25);
+  border-radius: 8px; padding: 12px 14px;
+}
+.nota-opt b { color: var(--texto); }
+.fa-hint { font-size: 12px; opacity: .8; }
+/* Fila óptima resaltada en amarillo */
+.tabla tr.optima td { background: rgba(210,153,34,.22); font-weight: 700; }
+.tabla tr.optima:hover td { background: rgba(210,153,34,.3); }

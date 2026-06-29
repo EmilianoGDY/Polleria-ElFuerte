@@ -24,6 +24,7 @@
         <button id="btn-con" class="btn">Correr CON stock</button>
         <button id="btn-sin" class="btn">Correr SIN stock</button>
         <button id="btn-otra" class="btn" disabled>↻ Otra simulación</button>
+        <button id="btn-optimo" class="btn">🎯 Stock óptimo</button>
       </div>
 
       <p id="placeholder-sim" class="placeholder">Elegí un modo para correr la simulación.</p>
@@ -53,6 +54,47 @@
         <div class="panel panel-promedio">
           <div class="titulo-promedio">Promedio de <span id="rep-n">—</span> corridas</div>
           <div class="grid-replicas" id="grid-replicas"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ STOCK ÓPTIMO (barrido) ============ -->
+    <section id="vista-optimo" class="vista">
+      <div class="volver-bar"><button id="btn-volver" class="btn-chico">← Volver a simular</button></div>
+      <div class="panel">
+        <div class="rango-opt">
+          <div class="campo-opt"><label>Stock desde</label><input id="opt-desde" type="number" min="0" value="1"></div>
+          <div class="campo-opt"><label>Stock hasta</label><input id="opt-hasta" type="number" min="1" value="300"></div>
+          <div class="campo-opt"><label>Corridas por stock</label><input id="opt-corridas" type="number" min="1" value="500"></div>
+          <button id="btn-encontrar" class="btn">🎯 Encontrar óptimo</button>
+        </div>
+        <p class="nota-opt">
+          ℹ️ Se prueba cada stock del rango y se elige el que <b>maximiza la ganancia neta</b>.
+          La <b>restricción de abandono se activa automáticamente</b> para esta evaluación
+          (sin ella el stock no cambiaría la ganancia). <span id="nota-corridas"></span>
+          <br>Factor de afluencia actual: <b id="nota-fa">—</b> <span class="fa-hint">(se edita en Parámetros)</span>
+        </p>
+      </div>
+
+      <p id="opt-placeholder" class="placeholder">Elegí el rango y apretá «Encontrar óptimo».</p>
+
+      <div id="opt-resultado" class="oculto">
+        <div class="panel panel-promedio" id="opt-destacado"></div>
+        <div class="panel">
+          <div class="panel-titulo">Resultados por stock</div>
+          <div class="tabla-scroll">
+            <table class="tabla" id="tabla-barrido">
+              <thead>
+                <tr>
+                  <th>Stock</th><th>Atend.</th><th>Mila.</th><th>Retir.</th>
+                  <th>Esp.prom</th><th>Esp.máx</th><th>St.rem</th>
+                  <th>Ingreso</th><th>Costo MP</th><th>Desperd.</th>
+                  <th>Oport.</th><th>Gan.neta</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>

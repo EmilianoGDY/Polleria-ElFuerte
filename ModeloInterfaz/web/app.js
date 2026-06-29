@@ -9,6 +9,7 @@ async function pedir(url, opciones) {
 }
 
 const plata = (n) => "$" + n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const plataR = (n) => "$" + Math.round(n).toLocaleString("es-AR");   // sin centavos (tabla compacta)
 const num = (n, dec = 2) => (n === null || n === undefined ? "—" : Number(n).toFixed(dec));
 function hora(min) {                 // minutos desde las 08:00 -> "HH:MM"
   if (min === null || min === undefined) return "—";
@@ -25,13 +26,14 @@ function toast(msg, tipo = "ok") {
   toastTimer = setTimeout(() => (t.className = "toast"), 2500);
 }
 
-// Navegación por tabs
-$$(".tab").forEach((tab) => tab.addEventListener("click", () => {
-  $$(".tab").forEach((t) => t.classList.remove("activo"));
-  tab.classList.add("activo");
+// Navegación por tabs (y pantallas sin tab, como Stock óptimo)
+function irA(vistaId, tabData = null) {
   $$(".vista").forEach((v) => v.classList.remove("activa"));
-  $("#vista-" + tab.dataset.vista).classList.add("activa");
-}));
+  $("#" + vistaId).classList.add("activa");
+  $$(".tab").forEach((t) => t.classList.toggle("activo", t.dataset.vista === tabData));
+}
+$$(".tab").forEach((tab) =>
+  tab.addEventListener("click", () => irA("vista-" + tab.dataset.vista, tab.dataset.vista)));
 
 // ---------- Estado (parámetros + restricciones) ----------
 async function cargarEstado() {
@@ -52,6 +54,13 @@ function dibujarParametros(estado) {
   $("#derivados").innerHTML =
     `Precio por milanesa: <b>${plata(estado.derivados.precio_milanesa)}</b> &nbsp;·&nbsp; ` +
     `Margen neto por milanesa: <b>${plata(estado.derivados.margen_milanesa)}</b>`;
+
+  // Mostrar el factor de afluencia actual en la pantalla de stock óptimo.
+  const fa = estado.parametros.find((p) => p.clave === "FA");
+  if (fa) {
+    const etiqueta = fa.valor === 1 ? " (semana)" : fa.valor === 0.7 ? " (sábado)" : "";
+    $("#nota-fa").textContent = fa.valor + etiqueta;
+  }
 }
 
 async function guardarParametro(clave, valor) {
@@ -124,7 +133,7 @@ function pintarMuestra(d) {
     `· corrida N° ${d.muestra_nro} de ${d.total_corridas} · ` +
     (d.modo === "con" ? `CON stock (S=${d.stock})` : "SIN stock (S=0)");
 
-  // Tarjetas chicas de la corrida mostrada
+  // Tarjetas chicas de la corrida mostrada (el último campo opcional es una sub-línea)
   const cards = [
     ["Atendidos", r.atendidos, "cyan"],
     ["Se retiraron", r.perdidos_tolerancia, "rojo"],
@@ -133,7 +142,8 @@ function pintarMuestra(d) {
     ["Ganancia neta", plata(r.ganancia_neta), "verde"],
     ["Costo oportunidad", plata(r.perdida_oportunidad), "rojo"],
     ["Espera prom.", num(r.espera_promedio, 1) + " min", ""],
-    ["Stock remanente", Math.ceil(r.stock_remanente), ""],
+    ["Stock rem. y desperdicio",
+      `${Math.ceil(r.stock_remanente)} <span class="costo-inline">= ${plata(r.desperdicio)}</span>`, "amarillo"],
   ];
   $("#cards-resumen").innerHTML = cards.map(([k, v, c]) =>
     `<div class="card ${c}"><div class="etiqueta">${k}</div><div class="valor ${c}">${v}</div></div>`).join("");
@@ -169,7 +179,8 @@ function pintarReplicas(rep) {
     ["Se retiraron", Math.ceil(rep.perdidos_tolerancia), ""],
     ["Espera promedio (min)", num(rep.espera_promedio), ""],
     ["Espera máxima (min)", num(rep.espera_maxima), ""],
-    ["Stock remanente", Math.ceil(rep.stock_remanente), ""],
+    ["Stock rem. y desperdicio",
+      `${Math.ceil(rep.stock_remanente)} <span class="costo-inline">= ${plata(rep.desperdicio)}</span>`, "amarillo"],
     ["Ingreso", plata(rep.ganancia_bruta), ""],
     ["Costo materia prima", plata(rep.costo_total), "amarillo"],
     ["Costo oportunidad", plata(rep.perdida_oportunidad), "rojo"],
@@ -183,5 +194,61 @@ $("#btn-con").addEventListener("click", (e) => correr("/api/simular", "con", e.c
 $("#btn-sin").addEventListener("click", (e) => correr("/api/simular", "sin", e.currentTarget));
 $("#btn-otra").addEventListener("click", (e) => { if (ultimoModo) correr("/api/simular", ultimoModo, e.currentTarget); });
 $("#btn-muestra").addEventListener("click", (e) => { if (ultimoModo) correr("/api/muestra", ultimoModo, e.currentTarget); });
+
+// ---------- Stock óptimo (barrido) ----------
+$("#btn-optimo").addEventListener("click", () => irA("vista-optimo"));
+$("#btn-volver").addEventListener("click", () => irA("vista-simular", "simular"));
+
+async function encontrarOptimo(boton) {
+  const desde = parseInt($("#opt-desde").value, 10) || 0;
+  const hasta = parseInt($("#opt-hasta").value, 10) || 0;
+  const corridas = parseInt($("#opt-corridas").value, 10) || 1;
+  if (hasta < desde) { toast("El 'hasta' debe ser mayor o igual al 'desde'.", "error"); return; }
+
+  const texto = boton.textContent;
+  boton.disabled = true;
+  boton.textContent = `Probando ${hasta - desde + 1} stocks…`;
+  const { datos } = await pedir("/api/barrido", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ desde, hasta, corridas }),
+  });
+  dibujarBarrido(datos);
+  boton.disabled = false;
+  boton.textContent = texto;
+}
+
+function dibujarBarrido(d) {
+  $("#opt-placeholder").classList.add("oculto");
+  $("#opt-resultado").classList.remove("oculto");
+  $("#nota-corridas").textContent = `Se hacen ${d.corridas} corridas por cada stock.`;
+
+  const opt = d.filas[d.optimo_indice];
+  $("#opt-destacado").innerHTML =
+    `<div class="titulo-promedio">Stock óptimo: ${opt.stock}</div>` +
+    `<div class="grid-replicas">` +
+    `<div class="metrica verde"><span class="k">Ganancia neta</span><span class="v verde">${plata(opt.ganancia_neta)}</span></div>` +
+    `<div class="metrica"><span class="k">Clientes atendidos</span><span class="v">${Math.ceil(opt.atendidos)}</span></div>` +
+    `<div class="metrica rojo"><span class="k">Costo oportunidad</span><span class="v rojo">${plata(opt.perdida_oportunidad)}</span></div>` +
+    `<div class="metrica amarillo"><span class="k">Desperdicio</span><span class="v">${plata(opt.desperdicio)}</span></div>` +
+    `</div>`;
+
+  $("#tabla-barrido tbody").innerHTML = d.filas.map((f, i) => `
+    <tr class="${i === d.optimo_indice ? "optima" : ""}">
+      <td>${f.stock}</td>
+      <td>${Math.ceil(f.atendidos)}</td>
+      <td>${Math.ceil(f.milanesas_vendidas)}</td>
+      <td>${Math.ceil(f.perdidos_tolerancia)}</td>
+      <td>${num(f.espera_promedio)}</td>
+      <td>${num(f.espera_maxima)}</td>
+      <td>${Math.ceil(f.stock_remanente)}</td>
+      <td>${plataR(f.ganancia_bruta)}</td>
+      <td>${plataR(f.costo_total)}</td>
+      <td>${plataR(f.desperdicio)}</td>
+      <td>${plataR(f.perdida_oportunidad)}</td>
+      <td class="verde">${plataR(f.ganancia_neta)}</td>
+    </tr>`).join("");
+}
+
+$("#btn-encontrar").addEventListener("click", (e) => encontrarOptimo(e.currentTarget));
 
 cargarEstado();

@@ -58,6 +58,7 @@ def serializar_jornada(res):
             "stock_remanente": res.stock_remanente,
             "ganancia_bruta": res.ganancia_bruta,
             "costo_total": res.costo_total,
+            "desperdicio": res.desperdicio,
             "ganancia_neta": res.ganancia_neta,
             "perdida_oportunidad": res.perdida_oportunidad,
         },
@@ -67,8 +68,9 @@ def serializar_jornada(res):
 def serializar_replicas(rep):
     return {k: getattr(rep, k) for k in (
         "corridas", "atendidos", "perdidos_tolerancia", "milanesas_vendidas",
-        "milanesas_no_vendidas", "ganancia_bruta", "costo_total", "ganancia_neta",
-        "perdida_oportunidad", "espera_promedio", "espera_maxima", "stock_remanente")}
+        "milanesas_no_vendidas", "ganancia_bruta", "costo_total", "desperdicio",
+        "ganancia_neta", "perdida_oportunidad", "espera_promedio", "espera_maxima",
+        "stock_remanente")}
 
 
 def actualizar_parametro(datos):
@@ -112,6 +114,49 @@ def correr_simulacion(datos):
     replicas = logica.correr_replicas(PARAMETROS, stock_inicial=_stock_de(modo))
     salida["replicas"] = serializar_replicas(replicas)
     return salida
+
+
+def _entero(valor, defecto):
+    try:
+        return int(valor)
+    except (ValueError, TypeError):
+        return defecto
+
+
+def correr_barrido(datos):
+    """
+    Prueba cada stock del rango [desde, hasta] con la restricción de abandono
+    ACTIVADA, y devuelve el promedio de N corridas por stock + el óptimo
+    (el que maximiza la ganancia neta).
+    """
+    desde = max(0, _entero(datos.get("desde"), 1))
+    hasta = max(desde, _entero(datos.get("hasta"), 300))
+    corridas = max(1, _entero(datos.get("corridas"), 500))
+    # Límites de seguridad para no colgar el navegador.
+    hasta = min(hasta, desde + 500)
+    corridas = min(corridas, 3000)
+
+    # Para el barrido la restricción de abandono SIEMPRE está activa (sin esto el
+    # stock no cambiaría la ganancia). No tocamos la preferencia del usuario.
+    original = PARAMETROS.abandono_por_tolerancia
+    PARAMETROS.abandono_por_tolerancia = True
+    try:
+        filas = []
+        optimo_indice = 0
+        mejor_ganancia = None
+        for i, s in enumerate(range(desde, hasta + 1)):
+            rep = logica.correr_replicas(PARAMETROS, stock_inicial=s, corridas=corridas)
+            fila = serializar_replicas(rep)
+            fila["stock"] = s
+            filas.append(fila)
+            if mejor_ganancia is None or rep.ganancia_neta > mejor_ganancia:
+                mejor_ganancia = rep.ganancia_neta
+                optimo_indice = i
+    finally:
+        PARAMETROS.abandono_por_tolerancia = original
+
+    return {"desde": desde, "hasta": hasta, "corridas": corridas,
+            "optimo_indice": optimo_indice, "filas": filas}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -168,6 +213,8 @@ class Handler(BaseHTTPRequestHandler):
             self._json(correr_simulacion(datos))
         elif self.path == "/api/muestra":
             self._json(_muestra(datos.get("modo", "sin")))
+        elif self.path == "/api/barrido":
+            self._json(correr_barrido(datos))
         else:
             self.send_error(404)
 
