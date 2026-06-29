@@ -178,8 +178,8 @@ body {
 .toast.error { border-color: var(--rojo); }
 .toast.ok { border-color: var(--verde); }
 
-/* Costo del stock remanente, en línea al lado del número (no agranda la cajita) */
-.costo-inline { font-size: .68em; font-weight: 600; color: var(--rojo); }
+/* Costo del stock remanente, en línea al lado del número, del mismo tamaño */
+.costo-inline { color: var(--rojo); }
 
 /* Pantalla Stock óptimo */
 .volver-bar { margin-bottom: 16px; }

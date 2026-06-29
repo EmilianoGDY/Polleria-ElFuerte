@@ -134,7 +134,7 @@ def correr_barrido(datos):
     corridas = max(1, _entero(datos.get("corridas"), 500))
     # Límites de seguridad para no colgar el navegador.
     hasta = min(hasta, desde + 500)
-    corridas = min(corridas, 3000)
+    corridas = min(corridas, 8000)
 
     # Para el barrido la restricción de abandono SIEMPRE está activa (sin esto el
     # stock no cambiaría la ganancia). No tocamos la preferencia del usuario.

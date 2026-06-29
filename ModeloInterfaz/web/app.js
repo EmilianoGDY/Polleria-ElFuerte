@@ -199,10 +199,15 @@ $("#btn-muestra").addEventListener("click", (e) => { if (ultimoModo) correr("/ap
 $("#btn-optimo").addEventListener("click", () => irA("vista-optimo"));
 $("#btn-volver").addEventListener("click", () => irA("vista-simular", "simular"));
 
+// No permitir más de 8000 corridas por stock.
+$("#opt-corridas").addEventListener("input", (e) => {
+  if (+e.target.value > 8000) e.target.value = 8000;
+});
+
 async function encontrarOptimo(boton) {
   const desde = parseInt($("#opt-desde").value, 10) || 0;
   const hasta = parseInt($("#opt-hasta").value, 10) || 0;
-  const corridas = parseInt($("#opt-corridas").value, 10) || 1;
+  const corridas = Math.min(parseInt($("#opt-corridas").value, 10) || 1, 8000);
   if (hasta < desde) { toast("El 'hasta' debe ser mayor o igual al 'desde'.", "error"); return; }
 
   const texto = boton.textContent;
