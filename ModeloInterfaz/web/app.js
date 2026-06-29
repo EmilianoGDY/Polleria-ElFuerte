@@ -94,17 +94,14 @@ async function toggleTolerancia(valor) {
 }
 
 // ---------- Simulación ----------
-let ultimoModo = null;
-
-async function correr(url, modo, boton) {
-  ultimoModo = modo;
+async function correr(url, boton) {
   const texto = boton.textContent;
   $$(".btn, .btn-chico").forEach((b) => (b.disabled = true));
   boton.textContent = "Calculando…";
 
   const { datos } = await pedir(url, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ modo }),
+    body: JSON.stringify({}),
   });
 
   $("#placeholder-sim").classList.add("oculto");
@@ -123,8 +120,8 @@ function pintarMuestra(d) {
   const ingreso = r.ganancia_bruta, costoMP = r.costo_total;
 
   $("#muestra-nro").textContent =
-    `· corrida N° ${d.muestra_nro} de ${d.total_corridas} · ` +
-    (d.modo === "con" ? `CON stock (S=${d.stock})` : "SIN stock (S=0)");
+    `· corrida N° ${d.muestra_nro} de ${d.total_corridas} · S=${d.stock}` +
+    (d.stock === 0 ? " (sin pre-elaboración)" : "");
 
   // Tarjetas chicas de la corrida mostrada (el último campo opcional es una sub-línea)
   const cards = [
@@ -182,12 +179,37 @@ function pintarReplicas(rep) {
   ];
   $("#grid-replicas").innerHTML = metricas.map(([k, v, c]) =>
     `<div class="metrica ${c}"><span class="k">${k}</span><span class="v ${c}">${v}</span></div>`).join("");
+  pintarIntervalos(rep.intervalos, rep.corridas);
 }
 
-$("#btn-con").addEventListener("click", (e) => correr("/api/simular", "con", e.currentTarget));
-$("#btn-sin").addEventListener("click", (e) => correr("/api/simular", "sin", e.currentTarget));
-$("#btn-otra").addEventListener("click", (e) => { if (ultimoModo) correr("/api/simular", ultimoModo, e.currentTarget); });
-$("#btn-muestra").addEventListener("click", (e) => { if (ultimoModo) correr("/api/muestra", ultimoModo, e.currentTarget); });
+// Intervalo de confianza del 95% por variable de respuesta. Cada formateador
+// adapta la unidad ($ para plata, decimales para conteos/minutos).
+const VARIABLES_IC = [
+  ["Ganancia neta", "ganancia_neta", plata],
+  ["Clientes atendidos", "atendidos", (v) => num(v, 2)],
+  ["Espera promedio (min)", "espera_promedio", (v) => num(v, 2)],
+  ["Costo oportunidad (pérdida)", "perdida_oportunidad", plata],
+];
+
+function pintarIntervalos(ic, n) {
+  if (!ic) return;
+  $("#ic-n").textContent = n;
+  $("#tabla-ic tbody").innerHTML = VARIABLES_IC.map(([etiqueta, clave, fmt]) => {
+    const e = ic[clave];
+    if (!e) return "";
+    return `<tr>
+      <td class="ic-var">${etiqueta}</td>
+      <td>${fmt(e.media)}</td>
+      <td>${fmt(e.desvio)}</td>
+      <td>[ ${fmt(e.ic_bajo)} ; ${fmt(e.ic_alto)} ]</td>
+      <td>± ${fmt(e.semiancho)}</td>
+    </tr>`;
+  }).join("");
+}
+
+$("#btn-correr").addEventListener("click", (e) => correr("/api/simular", e.currentTarget));
+$("#btn-otra").addEventListener("click", (e) => correr("/api/simular", e.currentTarget));
+$("#btn-muestra").addEventListener("click", (e) => correr("/api/muestra", e.currentTarget));
 
 // ---------- Stock óptimo (barrido) ----------
 $("#btn-optimo").addEventListener("click", () => irA("vista-optimo"));

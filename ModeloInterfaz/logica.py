@@ -7,7 +7,9 @@ Este archivo solo calcula: no imprime ni pide datos por consola.
 """
 
 from dataclasses import dataclass, field
+import math
 import random
+import statistics
 
 
 # --- Distribuciones empíricas (tablas Montecarlo de campo) ---
@@ -164,6 +166,55 @@ def _fila(N, r1, TA, HL, r2, M, TP, NC, HI, TE, HF, estado, stock):
             "NC": NC, "HI": HI, "TE": TE, "HF": HF, "estado": estado, "stock": stock}
 
 
+# --- Intervalos de confianza sobre las réplicas ---
+# t de Student de dos colas al 95% según grados de libertad (df = N - 1). Para
+# muestras grandes (df >= 30) se usa la aproximación normal z = 1.96.
+_T_95 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365,
+         8: 2.306, 9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179, 13: 2.160,
+         14: 2.145, 15: 2.131, 16: 2.120, 17: 2.110, 18: 2.101, 19: 2.093,
+         20: 2.086, 21: 2.080, 22: 2.074, 23: 2.069, 24: 2.064, 25: 2.060,
+         26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045}
+
+
+def t_critico_95(n):
+    """Valor crítico t (dos colas, 95%) para una muestra de tamaño n (df = n-1)."""
+    df = n - 1
+    if df < 1:
+        return 0.0
+    if df >= 30:
+        return 1.96      # muestra grande: aproximación normal
+    return _T_95[df]
+
+
+@dataclass
+class Estadistica:
+    """Resumen de una variable de respuesta sobre las N réplicas."""
+    media: float = 0.0
+    desvio: float = 0.0       # desviación estándar muestral (s, con N-1)
+    semiancho: float = 0.0    # t * s / sqrt(N): precisión del intervalo
+    ic_bajo: float = 0.0      # extremo inferior del IC 95%
+    ic_alto: float = 0.0      # extremo superior del IC 95%
+    n: int = 0
+
+
+def estadistica(muestras):
+    """Media, desvío e intervalo de confianza del 95% de una lista de valores."""
+    n = len(muestras)
+    if n == 0:
+        return Estadistica()
+    media = sum(muestras) / n
+    if n < 2:
+        return Estadistica(media=media, ic_bajo=media, ic_alto=media, n=n)
+    s = statistics.stdev(muestras)              # desvío muestral (ddof = 1)
+    h = t_critico_95(n) * s / math.sqrt(n)      # semiancho del intervalo
+    return Estadistica(media=media, desvio=s, semiancho=h,
+                       ic_bajo=media - h, ic_alto=media + h, n=n)
+
+
+# Variables de respuesta para las que se reporta el intervalo de confianza.
+VARIABLES_IC = ("ganancia_neta", "atendidos", "espera_promedio", "perdida_oportunidad")
+
+
 @dataclass
 class ResultadoReplicas:
     corridas: int = 0
@@ -179,10 +230,11 @@ class ResultadoReplicas:
     espera_promedio: float = 0.0
     espera_maxima: float = 0.0
     stock_remanente: float = 0.0
+    intervalos: dict = field(default_factory=dict)   # variable -> Estadistica (IC 95%)
 
 
 def correr_replicas(p, stock_inicial=None, corridas=None, rng=None):
-    """Corre N réplicas y devuelve los promedios (para validación / experimentos)."""
+    """Corre N réplicas y devuelve los promedios + intervalos de confianza (95%)."""
     if corridas is None:
         corridas = p.cantidad_corridas
     if rng is None:
@@ -190,6 +242,9 @@ def correr_replicas(p, stock_inicial=None, corridas=None, rng=None):
 
     acum = ResultadoReplicas(corridas=corridas)
     suma_espera = 0.0
+    # Guardamos el valor de cada réplica para las variables de respuesta, así
+    # podemos calcular desvío e intervalo de confianza (no solo el promedio).
+    muestras = {v: [] for v in VARIABLES_IC}
     for _ in range(corridas):
         r = simular_jornada(p, stock_inicial=stock_inicial, rng=rng)
         acum.atendidos += r.atendidos
@@ -205,6 +260,11 @@ def correr_replicas(p, stock_inicial=None, corridas=None, rng=None):
         acum.stock_remanente += r.stock_remanente
         suma_espera += r.espera_promedio
 
+        muestras["ganancia_neta"].append(r.ganancia_neta)
+        muestras["atendidos"].append(r.atendidos)
+        muestras["espera_promedio"].append(r.espera_promedio)
+        muestras["perdida_oportunidad"].append(r.perdida_oportunidad)
+
     n = corridas if corridas else 1
     for campo in ("atendidos", "perdidos_tolerancia", "milanesas_vendidas",
                   "milanesas_no_vendidas", "ganancia_bruta", "costo_total",
@@ -212,6 +272,7 @@ def correr_replicas(p, stock_inicial=None, corridas=None, rng=None):
                   "espera_maxima", "stock_remanente"):
         setattr(acum, campo, getattr(acum, campo) / n)
     acum.espera_promedio = suma_espera / n
+    acum.intervalos = {v: estadistica(muestras[v]) for v in VARIABLES_IC}
     return acum
 
 

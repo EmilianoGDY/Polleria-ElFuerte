@@ -114,5 +114,37 @@ class TestValidacionHistorica(unittest.TestCase):
         self.assertLess(rep.atendidos, 20)
 
 
+class TestIntervalosConfianza(unittest.TestCase):
+    def test_estadistica_basica(self):
+        # Sobre una muestra conocida: media correcta, desvío muestral (N-1) e
+        # intervalo simétrico (media ± semiancho) con semiancho positivo.
+        est = logica.estadistica([10, 12, 14, 16, 18])
+        self.assertAlmostEqual(est.media, 14.0)
+        self.assertAlmostEqual(est.desvio, 3.1622776, places=5)  # stdev muestral
+        self.assertGreater(est.semiancho, 0)
+        self.assertAlmostEqual(est.ic_bajo, est.media - est.semiancho)
+        self.assertAlmostEqual(est.ic_alto, est.media + est.semiancho)
+
+    def test_t_grande_usa_normal(self):
+        # Muestra grande (df >= 30, o sea N >= 31) -> aproximación normal z = 1.96.
+        self.assertEqual(logica.t_critico_95(200), 1.96)
+        # Muestra chica -> t de Student de la tabla.
+        self.assertEqual(logica.t_critico_95(5), 2.776)    # df = 4
+        self.assertEqual(logica.t_critico_95(30), 2.045)   # df = 29 (aún t)
+
+    def test_replicas_reportan_intervalos(self):
+        # correr_replicas debe entregar un IC por cada variable de respuesta,
+        # con la media dentro del intervalo y coherente con el promedio plano.
+        rep = logica.correr_replicas(Parametros(), stock_inicial=40,
+                                     corridas=120, rng=random.Random(77))
+        for var in logica.VARIABLES_IC:
+            est = rep.intervalos[var]
+            self.assertEqual(est.n, 120)
+            self.assertLessEqual(est.ic_bajo, est.media)
+            self.assertLessEqual(est.media, est.ic_alto)
+        # La media del IC de atendidos coincide con el promedio plano reportado.
+        self.assertAlmostEqual(rep.intervalos["atendidos"].media, rep.atendidos)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

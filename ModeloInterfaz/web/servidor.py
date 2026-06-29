@@ -66,11 +66,17 @@ def serializar_jornada(res):
 
 
 def serializar_replicas(rep):
-    return {k: getattr(rep, k) for k in (
+    datos = {k: getattr(rep, k) for k in (
         "corridas", "atendidos", "perdidos_tolerancia", "milanesas_vendidas",
         "milanesas_no_vendidas", "ganancia_bruta", "costo_total", "desperdicio",
         "ganancia_neta", "perdida_oportunidad", "espera_promedio", "espera_maxima",
         "stock_remanente")}
+    # Intervalos de confianza del 95% por variable de respuesta.
+    datos["intervalos"] = {
+        v: {"media": e.media, "desvio": e.desvio, "semiancho": e.semiancho,
+            "ic_bajo": e.ic_bajo, "ic_alto": e.ic_alto, "n": e.n}
+        for v, e in rep.intervalos.items()}
+    return datos
 
 
 def actualizar_parametro(datos):
@@ -93,25 +99,24 @@ def actualizar_parametro(datos):
     return True, f"'{etiqueta}' actualizado."
 
 
-def _stock_de(modo):
-    return 0 if modo == "sin" else PARAMETROS.stock_inicial
+def _muestra():
+    """Una jornada de muestra etiquetada como la corrida N° X de las N totales.
 
-
-def _muestra(modo):
-    """Una jornada de muestra etiquetada como la corrida N° X de las N totales."""
-    stock = _stock_de(modo)
+    El stock inicial S es siempre el parámetro del modelo (S=0 es el caso sin
+    pre-elaboración); no existe una 'versión sin stock' separada.
+    """
+    stock = PARAMETROS.stock_inicial
     jornada = logica.simular_jornada(PARAMETROS, stock_inicial=stock)
     nro = random.randint(1, max(1, PARAMETROS.cantidad_corridas))
-    return {"modo": modo, "stock": stock, "muestra_nro": nro,
+    return {"stock": stock, "muestra_nro": nro,
             "total_corridas": PARAMETROS.cantidad_corridas,
             "jornada": serializar_jornada(jornada)}
 
 
-def correr_simulacion(datos):
-    """Simulación completa: una muestra + el promedio de las N corridas."""
-    modo = datos.get("modo", "sin")
-    salida = _muestra(modo)
-    replicas = logica.correr_replicas(PARAMETROS, stock_inicial=_stock_de(modo))
+def correr_simulacion():
+    """Simulación completa: una muestra + el promedio e IC de las N corridas."""
+    salida = _muestra()
+    replicas = logica.correr_replicas(PARAMETROS, stock_inicial=PARAMETROS.stock_inicial)
     salida["replicas"] = serializar_replicas(replicas)
     return salida
 
@@ -210,9 +215,9 @@ class Handler(BaseHTTPRequestHandler):
             PARAMETROS.abandono_por_tolerancia = bool(datos.get("valor"))
             self._json({"ok": True, "estado": serializar_estado(PARAMETROS)})
         elif self.path == "/api/simular":
-            self._json(correr_simulacion(datos))
+            self._json(correr_simulacion())
         elif self.path == "/api/muestra":
-            self._json(_muestra(datos.get("modo", "sin")))
+            self._json(_muestra())
         elif self.path == "/api/barrido":
             self._json(correr_barrido(datos))
         else:

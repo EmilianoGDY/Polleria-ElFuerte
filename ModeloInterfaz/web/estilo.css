@@ -199,4 +199,8 @@ body {
 .nota-opt b { color: var(--texto); }
 /* Fila óptima resaltada en amarillo */
 .tabla tr.optima td { background: rgba(210,153,34,.22); font-weight: 700; }
+
+/* Tabla de intervalos de confianza */
+.nota-ic { margin: 6px 0 12px; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+#tabla-ic .ic-var { text-align: left; font-weight: 600; color: var(--texto); }
 .tabla tr.optima:hover td { background: rgba(210,153,34,.3); }

@@ -21,13 +21,12 @@
     <!-- ============ SIMULAR ============ -->
     <section id="vista-simular" class="vista activa">
       <div class="acciones">
-        <button id="btn-con" class="btn">Correr CON stock</button>
-        <button id="btn-sin" class="btn">Correr SIN stock</button>
+        <button id="btn-correr" class="btn">▶ Correr simulación</button>
         <button id="btn-otra" class="btn" disabled>↻ Otra simulación</button>
         <button id="btn-optimo" class="btn">🎯 Stock óptimo</button>
       </div>
 
-      <p id="placeholder-sim" class="placeholder">Elegí un modo para correr la simulación.</p>
+      <p id="placeholder-sim" class="placeholder">Apretá «Correr simulación» para arrancar (usa el stock inicial S de Parámetros; S=0 = sin pre-elaboración).</p>
 
       <div id="resultado-sim" class="oculto">
         <div class="cards" id="cards-resumen"></div>
@@ -54,6 +53,23 @@
         <div class="panel panel-promedio">
           <div class="titulo-promedio">Promedio de <span id="rep-n">—</span> corridas</div>
           <div class="grid-replicas" id="grid-replicas"></div>
+        </div>
+
+        <div class="panel panel-promedio">
+          <div class="titulo-promedio">Intervalo de confianza del 95% sobre <span id="ic-n">—</span> réplicas</div>
+          <p class="nota-ic">Para cada variable: media, desvío estándar (s), el intervalo
+            (media ± t·s/√N) y el semiancho (la precisión de la estimación).</p>
+          <div class="tabla-scroll">
+            <table class="tabla" id="tabla-ic">
+              <thead>
+                <tr>
+                  <th>Variable de respuesta</th><th>Media</th><th>Desv. (s)</th>
+                  <th>IC 95%</th><th>Semiancho (±)</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
