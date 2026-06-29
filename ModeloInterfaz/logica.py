@@ -32,7 +32,6 @@ class Parametros:
     Tf: float = 270.0                  # Cierre de jornada (12:30), en min desde las 08:00
     TI: float = 260.0                  # Límite de ingreso (12:20): después no entran clientes
     alpha: float = 1.50                # Tiempo de preparación por milanesa (min)
-    FA: float = 1.00                   # Factor de afluencia (1 = semana, 0.70 = sábado)
     precio_medio_kg: float = 6500.0    # Precio de medio kilo
     milanesas_por_medio_kg: int = 6    # Milanesas por medio kilo
     costo_milanesa: float = 700.0      # Costo de producir 1 milanesa (se resta de la ganancia)
@@ -79,8 +78,12 @@ class ResultadoJornada:
 
     @property
     def ganancia_neta(self):
-        # Ingreso menos lo producido: vendido + desperdiciado.
-        return self.ganancia_bruta - self.costo_total - self.desperdicio
+        # Ingreso menos: costo de oportunidad (ventas perdidas), materia prima
+        # de lo vendido y materia prima del sobrante (desperdicio).
+        return (self.ganancia_bruta
+                - self.perdida_oportunidad
+                - self.costo_total
+                - self.desperdicio)
 
     @property
     def perdida_oportunidad(self):
@@ -107,7 +110,7 @@ def simular_jornada(p, stock_inicial=None, rng=None):
 
     while True:
         r1 = rng.random()
-        TA = mapear(r1, TABLA_TA) * p.FA   # FA multiplica el resultado mapeado
+        TA = mapear(r1, TABLA_TA)
         N += 1
         HL = T + TA
 
@@ -215,13 +218,11 @@ def correr_replicas(p, stock_inicial=None, corridas=None, rng=None):
 # --- Metadatos de parámetros (etiqueta, tipo, unidad, validador) para la interfaz ---
 def _pos(x):    return x > 0
 def _no_neg(x): return x >= 0
-def _frac(x):   return 0 < x <= 5
 
 META_PARAMETROS = {
     "Tf":                     ("Tiempo final de jornada", float, "min", _pos),
     "TI":                     ("Tiempo límite de ingreso", float, "min", _pos),
     "alpha":                  ("Preparación por milanesa (α)", float, "min/mila", _pos),
-    "FA":                     ("Factor de afluencia", float, "", _frac),
     "precio_medio_kg":        ("Precio de medio kilo", float, "$", _pos),
     "milanesas_por_medio_kg": ("Milanesas por medio kilo", int, "u", _pos),
     "costo_milanesa":         ("Costo de producir 1 milanesa", float, "$", _no_neg),

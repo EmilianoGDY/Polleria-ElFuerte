@@ -29,13 +29,6 @@ class TestDistribuciones(unittest.TestCase):
         self.assertEqual(mapear(1.0, TABLA_TA), 32.0)
 
 
-class TestFA(unittest.TestCase):
-    def test_fa_multiplica_resultado(self):
-        # El Factor de Ajuste (FA) escala el TA ya mapeado, no el número aleatorio:
-        # confirma que el orden de las operaciones es el esperado.
-        self.assertEqual(mapear(0.50, TABLA_TA) * 0.70, 15.0 * 0.70)
-
-
 class TestMaxHLTL(unittest.TestCase):
     def test_hi_es_max_y_te_no_negativo(self):
         # Coherencia temporal: el inicio de atención (HI) nunca es anterior a la
@@ -99,9 +92,13 @@ class TestAbandono(unittest.TestCase):
 
 class TestEconomia(unittest.TestCase):
     def test_ganancia_neta_descuenta_costo(self):
-        # La ganancia neta es exactamente la bruta menos el costo total: valida la identidad económica.
-        res = logica.simular_jornada(Parametros(costo_milanesa=700.0), stock_inicial=0, rng=random.Random(8))
-        self.assertAlmostEqual(res.ganancia_neta, res.ganancia_bruta - res.costo_total)
+        # La ganancia neta es el ingreso menos los tres costos: oportunidad (ventas
+        # perdidas), materia prima de lo vendido y materia prima del sobrante.
+        res = logica.simular_jornada(Parametros(costo_milanesa=700.0, abandono_por_tolerancia=True,
+                                                tolerancia=5.0), stock_inicial=20, rng=random.Random(8))
+        self.assertAlmostEqual(
+            res.ganancia_neta,
+            res.ganancia_bruta - res.perdida_oportunidad - res.costo_total - res.desperdicio)
 
     def test_precio_milanesa_derivado(self):
         # El precio por milanesa se deriva del precio del medio kilo dividido la cantidad por medio kilo.
@@ -110,9 +107,9 @@ class TestEconomia(unittest.TestCase):
 
 class TestValidacionHistorica(unittest.TestCase):
     def test_semana_base_en_rango(self):
-        # Validación contra la realidad: con el escenario base (FA=1.0) el promedio de
-        # clientes atendidos debe caer en un rango razonable observado históricamente.
-        rep = logica.correr_replicas(Parametros(FA=1.0), stock_inicial=0, corridas=300, rng=random.Random(2025))
+        # Validación contra la realidad: con el escenario base el promedio de clientes
+        # atendidos debe caer en un rango razonable observado históricamente.
+        rep = logica.correr_replicas(Parametros(), stock_inicial=0, corridas=300, rng=random.Random(2025))
         self.assertGreater(rep.atendidos, 8)
         self.assertLess(rep.atendidos, 20)
 

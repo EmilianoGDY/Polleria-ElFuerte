@@ -197,7 +197,6 @@ body {
   border-radius: 8px; padding: 12px 14px;
 }
 .nota-opt b { color: var(--texto); }
-.fa-hint { font-size: 12px; opacity: .8; }
 /* Fila óptima resaltada en amarillo */
 .tabla tr.optima td { background: rgba(210,153,34,.22); font-weight: 700; }
 .tabla tr.optima:hover td { background: rgba(210,153,34,.3); }

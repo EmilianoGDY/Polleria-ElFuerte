@@ -54,13 +54,6 @@ function dibujarParametros(estado) {
   $("#derivados").innerHTML =
     `Precio por milanesa: <b>${plata(estado.derivados.precio_milanesa)}</b> &nbsp;·&nbsp; ` +
     `Margen neto por milanesa: <b>${plata(estado.derivados.margen_milanesa)}</b>`;
-
-  // Mostrar el factor de afluencia actual en la pantalla de stock óptimo.
-  const fa = estado.parametros.find((p) => p.clave === "FA");
-  if (fa) {
-    const etiqueta = fa.valor === 1 ? " (semana)" : fa.valor === 0.7 ? " (sábado)" : "";
-    $("#nota-fa").textContent = fa.valor + etiqueta;
-  }
 }
 
 async function guardarParametro(clave, valor) {
