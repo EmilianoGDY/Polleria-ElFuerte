@@ -225,17 +225,21 @@ body {
 
 /* ===== Barrido de stock óptimo ===== */
 /* Cada variable: media a la izquierda del centro, semiancho (±) a la derecha */
+/* Letra de la tabla 1.25x más grande que la base (12px -> 15px) */
+.tabla-barrido { font-size: 15px; }
 .tabla-barrido th { text-align: center; }
 .tabla-barrido th:last-child, .tabla-barrido td:last-child { text-align: center; }
 .tabla-barrido .col-stock { text-align: left; font-weight: 700; }
 .tabla-barrido .celda-ms { text-align: center; white-space: nowrap; }
 .tabla-barrido .celda-ms .ms-media { display: inline-block; text-align: right; min-width: 4.5em; }
+/* Semiancho del mismo tamaño que el número de la tabla */
 .tabla-barrido .celda-ms .ms-semi { display: inline-block; text-align: left; min-width: 4.5em;
-  color: var(--muted); font-size: .85em; padding-left: 6px; }
+  color: var(--muted); padding-left: 6px; }
 
 /* Cuadritos chicos del stock óptimo: 4 en una línea, con su semiancho */
 .grid-chicas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .metrica-chica { padding: 9px 12px; border-left-width: 4px; }
-.metrica-chica .k { display: block; color: var(--muted); font-size: 11.5px; }
-.metrica-chica .v { display: block; font-size: 16px; font-weight: 700; margin-top: 2px; }
-.metrica-chica .semi { display: block; color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+.metrica-chica .k { display: block; color: var(--muted); font-size: 11.5px; margin-bottom: 3px; }
+/* Valor y semiancho en la misma línea (± a la derecha) y del mismo tamaño */
+.metrica-chica .v { display: inline; font-size: 16px; font-weight: 700; }
+.metrica-chica .semi { display: inline; color: var(--muted); font-size: 16px; margin-left: 6px; }
