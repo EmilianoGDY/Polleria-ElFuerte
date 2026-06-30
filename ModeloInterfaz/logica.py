@@ -60,6 +60,7 @@ class ResultadoJornada:
     milanesas_no_vendidas: int = 0
     espera_total: float = 0.0
     espera_maxima: float = 0.0
+    espera_minima: float = 0.0
     stock_remanente: int = 0
     _precio: float = 0.0
     _costo: float = 0.0
@@ -109,6 +110,7 @@ def simular_jornada(p, stock_inicial=None, rng=None):
     N = 0
     stock = stock_inicial
     liberaciones = []   # fines de atención aún en curso, para calcular NC
+    espera_min = None   # menor TE entre los clientes atendidos
 
     while True:
         r1 = rng.random()
@@ -154,10 +156,12 @@ def simular_jornada(p, stock_inicial=None, rng=None):
         res.milanesas_vendidas += M
         res.espera_total += TE
         res.espera_maxima = max(res.espera_maxima, TE)
+        espera_min = TE if espera_min is None else min(espera_min, TE)
         res.filas.append(_fila(N, r1, TA, HL, r2, M, TP, NC, HI, TE, HF, "Atendido", stock))
         T = HL
 
     res.stock_remanente = stock
+    res.espera_minima = espera_min if espera_min is not None else 0.0
     return res
 
 
@@ -211,8 +215,12 @@ def estadistica(muestras):
                        ic_bajo=media - h, ic_alto=media + h, n=n)
 
 
-# Variables de respuesta para las que se reporta el intervalo de confianza.
-VARIABLES_IC = ("ganancia_neta", "atendidos", "espera_promedio", "perdida_oportunidad")
+# Variables de respuesta para las que se reporta media, semiancho e IC del 95%.
+# (los nombres coinciden con atributos/propiedades de ResultadoJornada)
+VARIABLES_IC = ("milanesas_vendidas", "stock_remanente", "atendidos",
+                "perdidos_tolerancia", "espera_promedio", "espera_maxima",
+                "espera_minima", "ganancia_bruta", "costo_total", "desperdicio",
+                "perdida_oportunidad", "ganancia_neta")
 
 
 @dataclass
@@ -229,6 +237,7 @@ class ResultadoReplicas:
     perdida_oportunidad: float = 0.0
     espera_promedio: float = 0.0
     espera_maxima: float = 0.0
+    espera_minima: float = 0.0
     stock_remanente: float = 0.0
     intervalos: dict = field(default_factory=dict)   # variable -> Estadistica (IC 95%)
 
@@ -257,19 +266,18 @@ def correr_replicas(p, stock_inicial=None, corridas=None, rng=None):
         acum.ganancia_neta += r.ganancia_neta
         acum.perdida_oportunidad += r.perdida_oportunidad
         acum.espera_maxima += r.espera_maxima
+        acum.espera_minima += r.espera_minima
         acum.stock_remanente += r.stock_remanente
         suma_espera += r.espera_promedio
 
-        muestras["ganancia_neta"].append(r.ganancia_neta)
-        muestras["atendidos"].append(r.atendidos)
-        muestras["espera_promedio"].append(r.espera_promedio)
-        muestras["perdida_oportunidad"].append(r.perdida_oportunidad)
+        for v in VARIABLES_IC:
+            muestras[v].append(getattr(r, v))
 
     n = corridas if corridas else 1
     for campo in ("atendidos", "perdidos_tolerancia", "milanesas_vendidas",
                   "milanesas_no_vendidas", "ganancia_bruta", "costo_total",
                   "desperdicio", "ganancia_neta", "perdida_oportunidad",
-                  "espera_maxima", "stock_remanente"):
+                  "espera_maxima", "espera_minima", "stock_remanente"):
         setattr(acum, campo, getattr(acum, campo) / n)
     acum.espera_promedio = suma_espera / n
     acum.intervalos = {v: estadistica(muestras[v]) for v in VARIABLES_IC}

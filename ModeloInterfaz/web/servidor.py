@@ -70,7 +70,7 @@ def serializar_replicas(rep):
         "corridas", "atendidos", "perdidos_tolerancia", "milanesas_vendidas",
         "milanesas_no_vendidas", "ganancia_bruta", "costo_total", "desperdicio",
         "ganancia_neta", "perdida_oportunidad", "espera_promedio", "espera_maxima",
-        "stock_remanente")}
+        "espera_minima", "stock_remanente")}
     # Intervalos de confianza del 95% por variable de respuesta.
     datos["intervalos"] = {
         v: {"media": e.media, "desvio": e.desvio, "semiancho": e.semiancho,

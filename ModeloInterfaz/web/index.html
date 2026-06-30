@@ -51,20 +51,13 @@
         </div>
 
         <div class="panel panel-promedio">
-          <div class="titulo-promedio">Promedio de <span id="rep-n">—</span> corridas</div>
-          <div class="grid-replicas" id="grid-replicas"></div>
-        </div>
-
-        <div class="panel panel-promedio">
-          <div class="titulo-promedio">Intervalo de confianza del 95% sobre <span id="ic-n">—</span> réplicas</div>
-          <p class="nota-ic">Para cada variable: media, desvío estándar (s), el intervalo
-            (media ± t·s/√N) y el semiancho (la precisión de la estimación).</p>
+          <div class="titulo-datos">Datos resultantes de <span id="rep-n">—</span> réplicas</div>
           <div class="tabla-scroll">
-            <table class="tabla" id="tabla-ic">
+            <table class="tabla tabla-datos" id="tabla-datos">
               <thead>
                 <tr>
-                  <th>Variable de respuesta</th><th>Media</th><th>Desv. (s)</th>
-                  <th>IC 95%</th><th>Semiancho (±)</th>
+                  <th class="col-var">Variable de respuesta</th>
+                  <th>Media</th><th>Semiancho (±)</th><th>IC 95%</th>
                 </tr>
               </thead>
               <tbody></tbody>
@@ -98,15 +91,8 @@
         <div class="panel">
           <div class="panel-titulo">Resultados por stock</div>
           <div class="tabla-scroll">
-            <table class="tabla" id="tabla-barrido">
-              <thead>
-                <tr>
-                  <th>Stock</th><th>Atend.</th><th>Mila.</th><th>Retir.</th>
-                  <th>Esp.prom</th><th>Esp.máx</th><th>St.rem</th>
-                  <th>Ingreso</th><th>Costo MP</th><th>Desperd.</th>
-                  <th>Oport.</th><th>Gan.neta</th>
-                </tr>
-              </thead>
+            <table class="tabla tabla-barrido" id="tabla-barrido">
+              <thead></thead>
               <tbody></tbody>
             </table>
           </div>

@@ -131,7 +131,7 @@ function pintarMuestra(d) {
     ["Costo materia prima", plata(costoMP), "amarillo"],
     ["Ganancia neta", plata(r.ganancia_neta), "verde"],
     ["Costo oportunidad", plata(r.perdida_oportunidad), "rojo"],
-    ["Espera prom.", num(r.espera_promedio, 1) + " min", ""],
+    ["Espera máx.", num(r.espera_maxima, 1) + " min", ""],
     ["Stock rem. y desperdicio",
       `${Math.ceil(r.stock_remanente)} <span class="costo-inline">= ${plata(r.desperdicio)}</span>`, "amarillo"],
   ];
@@ -160,49 +160,39 @@ function pintarMuestra(d) {
   }).join("");
 }
 
-// Promedio de las N corridas. Clientes atendidos: promedio con decimales (no se
-// redondea, porque es un valor medio). Milanesas: entero hacia arriba.
-function pintarReplicas(rep) {
-  $("#rep-n").textContent = rep.corridas;
-  const metricas = [
-    ["Clientes atendidos", num(rep.atendidos), ""],
-    ["Milanesas vendidas", Math.ceil(rep.milanesas_vendidas), ""],
-    ["Se retiraron", Math.ceil(rep.perdidos_tolerancia), ""],
-    ["Espera promedio (min)", num(rep.espera_promedio), ""],
-    ["Espera máxima (min)", num(rep.espera_maxima), ""],
-    ["Stock rem. y desperdicio",
-      `${Math.ceil(rep.stock_remanente)} <span class="costo-inline">= ${plata(rep.desperdicio)}</span>`, "amarillo"],
-    ["Ingreso", plata(rep.ganancia_bruta), ""],
-    ["Costo materia prima", plata(rep.costo_total), "amarillo"],
-    ["Costo oportunidad", plata(rep.perdida_oportunidad), "rojo"],
-    ["Ganancia neta", plata(rep.ganancia_neta), "verde"],
-  ];
-  $("#grid-replicas").innerHTML = metricas.map(([k, v, c]) =>
-    `<div class="metrica ${c}"><span class="k">${k}</span><span class="v ${c}">${v}</span></div>`).join("");
-  pintarIntervalos(rep.intervalos, rep.corridas);
-}
-
-// Intervalo de confianza del 95% por variable de respuesta. Cada formateador
-// adapta la unidad ($ para plata, decimales para conteos/minutos).
-const VARIABLES_IC = [
-  ["Ganancia neta", "ganancia_neta", plata],
-  ["Clientes atendidos", "atendidos", (v) => num(v, 2)],
-  ["Espera promedio (min)", "espera_promedio", (v) => num(v, 2)],
-  ["Costo oportunidad (pérdida)", "perdida_oportunidad", plata],
+// Datos resultantes de las N réplicas. Una tabla con, por variable de respuesta:
+// media, semiancho positivo (media ± semiancho) e intervalo de confianza del 95%.
+// El separador "Dinero" divide los conteos/tiempos de las variables en pesos.
+const FILAS_DATOS = [
+  ["Milanesas vendidas",   "milanesas_vendidas",  num,   ""],
+  ["Stock remanente",      "stock_remanente",     num,   ""],
+  ["Clientes atendidos",   "atendidos",           num,   ""],
+  ["Se retiraron",         "perdidos_tolerancia", num,   ""],
+  ["Espera media (min)",   "espera_promedio",     num,   ""],
+  ["Espera máxima (min)",  "espera_maxima",       num,   ""],
+  ["Espera mínima (min)",  "espera_minima",       num,   ""],
+  ["__SUB__",              "Dinero",              null,  ""],
+  ["Ingreso",              "ganancia_bruta",      plata, ""],
+  ["Costo materia prima",  "costo_total",         plata, "amarillo"],
+  ["Costo de desperdicio", "desperdicio",         plata, "rojo"],
+  ["Costo de oportunidad", "perdida_oportunidad", plata, "rojo"],
+  ["Ganancia neta",        "ganancia_neta",       plata, "verde"],
 ];
 
-function pintarIntervalos(ic, n) {
-  if (!ic) return;
-  $("#ic-n").textContent = n;
-  $("#tabla-ic tbody").innerHTML = VARIABLES_IC.map(([etiqueta, clave, fmt]) => {
+function pintarReplicas(rep) {
+  $("#rep-n").textContent = rep.corridas;
+  const ic = rep.intervalos || {};
+  $("#tabla-datos tbody").innerHTML = FILAS_DATOS.map(([etiqueta, clave, fmt, color]) => {
+    if (etiqueta === "__SUB__") {
+      return `<tr class="sub-datos"><td colspan="4">${clave}</td></tr>`;
+    }
     const e = ic[clave];
     if (!e) return "";
     return `<tr>
-      <td class="ic-var">${etiqueta}</td>
-      <td>${fmt(e.media)}</td>
-      <td>${fmt(e.desvio)}</td>
-      <td>[ ${fmt(e.ic_bajo)} ; ${fmt(e.ic_alto)} ]</td>
+      <td class="col-var ${color}">${etiqueta}</td>
+      <td class="${color}">${fmt(e.media)}</td>
       <td>± ${fmt(e.semiancho)}</td>
+      <td>[ ${fmt(e.ic_bajo)} ; ${fmt(e.ic_alto)} ]</td>
     </tr>`;
   }).join("");
 }
@@ -238,36 +228,65 @@ async function encontrarOptimo(boton) {
   boton.textContent = texto;
 }
 
+// Columnas del barrido: [nombre completo, clave, formateador, claseColor].
+// Cada celda muestra "media ± semiancho" centrada en la columna (media a la
+// izquierda del centro, semiancho positivo a la derecha).
+const COLS_BARRIDO = [
+  ["Atendidos",            "atendidos",           num,    ""],
+  ["Milanesas vendidas",   "milanesas_vendidas",  num,    ""],
+  ["Retirados",            "perdidos_tolerancia", num,    ""],
+  ["Espera media (min)",   "espera_promedio",     num,    ""],
+  ["Stock remanente",      "stock_remanente",     num,    ""],
+  ["Ingreso",              "ganancia_bruta",      plataR, ""],
+  ["Costo materia prima",  "costo_total",         plataR, "amarillo"],
+  ["Desperdicio",          "desperdicio",         plataR, "rojo"],
+  ["Costo de oportunidad", "perdida_oportunidad", plataR, "rojo"],
+  ["Ganancia neta",        "ganancia_neta",       plataR, "verde"],
+];
+
+function semiDe(f, clave) {
+  return f.intervalos && f.intervalos[clave] ? f.intervalos[clave].semiancho : 0;
+}
+
+function celdaMS(f, clave, fmt, color) {
+  return `<td class="celda-ms ${color}">` +
+    `<span class="ms-media">${fmt(f[clave])}</span>` +
+    `<span class="ms-semi">± ${fmt(semiDe(f, clave))}</span></td>`;
+}
+
 function dibujarBarrido(d) {
   $("#opt-placeholder").classList.add("oculto");
   $("#opt-resultado").classList.remove("oculto");
   $("#nota-corridas").textContent = `Se hacen ${d.corridas} corridas por cada stock.`;
 
+  // Stock óptimo: 4 cuadritos chicos (entran en una línea), cada uno con su semiancho.
   const opt = d.filas[d.optimo_indice];
+  const destacados = [
+    ["Ganancia neta",      "ganancia_neta",       plata, "verde"],
+    ["Clientes atendidos", "atendidos",           num,   ""],
+    ["Costo oportunidad",  "perdida_oportunidad", plata, "rojo"],
+    ["Desperdicio",        "desperdicio",         plata, "amarillo"],
+  ];
   $("#opt-destacado").innerHTML =
     `<div class="titulo-promedio">Stock óptimo: ${opt.stock}</div>` +
-    `<div class="grid-replicas">` +
-    `<div class="metrica verde"><span class="k">Ganancia neta</span><span class="v verde">${plata(opt.ganancia_neta)}</span></div>` +
-    `<div class="metrica"><span class="k">Clientes atendidos</span><span class="v">${num(opt.atendidos)}</span></div>` +
-    `<div class="metrica rojo"><span class="k">Costo oportunidad</span><span class="v rojo">${plata(opt.perdida_oportunidad)}</span></div>` +
-    `<div class="metrica amarillo"><span class="k">Desperdicio</span><span class="v">${plata(opt.desperdicio)}</span></div>` +
+    `<div class="grid-chicas">` +
+    destacados.map(([label, clave, fmt, color]) =>
+      `<div class="metrica metrica-chica ${color}">` +
+      `<span class="k">${label}</span>` +
+      `<span class="v ${color}">${fmt(opt[clave])}</span>` +
+      `<span class="semi">± ${fmt(semiDe(opt, clave))}</span></div>`).join("") +
     `</div>`;
 
-  $("#tabla-barrido tbody").innerHTML = d.filas.map((f, i) => `
-    <tr class="${i === d.optimo_indice ? "optima" : ""}">
-      <td>${f.stock}</td>
-      <td>${num(f.atendidos)}</td>
-      <td>${Math.ceil(f.milanesas_vendidas)}</td>
-      <td>${Math.ceil(f.perdidos_tolerancia)}</td>
-      <td>${num(f.espera_promedio)}</td>
-      <td>${num(f.espera_maxima)}</td>
-      <td>${Math.ceil(f.stock_remanente)}</td>
-      <td>${plataR(f.ganancia_bruta)}</td>
-      <td>${plataR(f.costo_total)}</td>
-      <td>${plataR(f.desperdicio)}</td>
-      <td>${plataR(f.perdida_oportunidad)}</td>
-      <td class="verde">${plataR(f.ganancia_neta)}</td>
-    </tr>`).join("");
+  // Encabezado (nombres completos, centrados) + filas con media ± semiancho.
+  $("#tabla-barrido thead").innerHTML =
+    `<tr><th class="col-stock">Stock</th>` +
+    COLS_BARRIDO.map(([label]) => `<th>${label}</th>`).join("") + `</tr>`;
+
+  $("#tabla-barrido tbody").innerHTML = d.filas.map((f, i) =>
+    `<tr class="${i === d.optimo_indice ? "optima" : ""}">` +
+    `<td class="col-stock">${f.stock}</td>` +
+    COLS_BARRIDO.map(([, clave, fmt, color]) => celdaMS(f, clave, fmt, color)).join("") +
+    `</tr>`).join("");
 }
 
 $("#btn-encontrar").addEventListener("click", (e) => encontrarOptimo(e.currentTarget));
